@@ -7,7 +7,6 @@ function Confirmacion() {
   const franja = pedido.franja
   const total = pedido.total || 0
 
-  // Generamos un código aleatorio de 6 caracteres
   const codigo = pedido.codigo || (() => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     const nuevo = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
@@ -24,7 +23,6 @@ function Confirmacion() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--crema)' }}>
 
-      {/* HEADER */}
       <div style={{
         background: 'var(--verde-oscuro)',
         padding: '48px 20px 40px',
@@ -42,7 +40,6 @@ function Confirmacion() {
         </div>
       </div>
 
-      {/* TARJETA PRINCIPAL */}
       <div style={{
         background: 'white', borderRadius: 20,
         margin: '-18px 16px 0',
@@ -50,7 +47,6 @@ function Confirmacion() {
         boxShadow: '0 4px 20px rgba(0,0,0,0.07)'
       }}>
 
-        {/* CÓDIGO */}
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{
             fontSize: 11, color: '#888',
@@ -68,7 +64,6 @@ function Confirmacion() {
           </div>
         </div>
 
-        {/* FRANJA HORARIA */}
         <div style={{
           background: 'var(--verde-claro)',
           borderRadius: 50, padding: '8px 16px',
@@ -82,7 +77,6 @@ function Confirmacion() {
           </span>
         </div>
 
-        {/* PRODUCTOS */}
         <div style={{
           fontSize: 11, color: '#888',
           letterSpacing: '0.06em', textTransform: 'uppercase',
@@ -105,7 +99,7 @@ function Confirmacion() {
                 {item.nombre}
               </div>
               <div style={{ fontSize: 11, color: 'var(--verde-oscuro)' }}>
-                {item.precio.toFixed(2)}€
+                {Number(item.precio).toFixed(2)}€
               </div>
               <div style={{
                 background: 'var(--verde-oscuro)', color: 'white',
@@ -118,7 +112,6 @@ function Confirmacion() {
           ))}
         </div>
 
-        {/* TOTAL */}
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           alignItems: 'center', borderTop: '1.5px solid #f0ede8',
@@ -131,7 +124,6 @@ function Confirmacion() {
         </div>
       </div>
 
-      {/* BOTÓN VOLVER */}
       <div style={{ padding: '20px 16px', marginTop: 'auto' }}>
         <button
           onClick={() => navigate('/inicio')}

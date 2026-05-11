@@ -98,7 +98,7 @@ function Pedido() {
     actualizarCarrito(carrito.filter(p => p.id !== id))
   }
 
-  const total = carrito.reduce((acc, p) => acc + p.precio * p.cantidad, 0)
+  const total = carrito.reduce((acc, p) => acc + Number(p.precio) * p.cantidad, 0)
 
   const handleConfirmar = () => {
     if (!franjaSeleccionada || carrito.length === 0) return
@@ -107,7 +107,7 @@ function Pedido() {
       franja: franjas.find(f => f.id === franjaSeleccionada),
       total
     }))
-    navigate('/confirmacion')
+    navigate('/pago')
   }
 
   if (carrito.length === 0) {
@@ -134,20 +134,17 @@ function Pedido() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--crema)' }}>
 
-      {/* HEADER */}
-<div style={{ background: 'var(--verde-oscuro)', padding: '16px 16px 24px' }}>
-  <button
-    onClick={() => navigate(-1)}
-    style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block' }}
-  >←</button>
-  <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--crema)' }}>Tu pedido</div>
-  <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)', marginTop: 2 }}>Elige la hora de recogida</div>
-</div>
+      <div style={{ background: 'var(--verde-oscuro)', padding: '16px 16px 24px' }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block' }}
+        >←</button>
+        <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--crema)' }}>Tu pedido</div>
+        <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)', marginTop: 2 }}>Elige la hora de recogida</div>
+      </div>
 
-      {/* CONTENIDO */}
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: '100px' }}>
 
-        {/* ARTÍCULOS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Artículos seleccionados
@@ -163,10 +160,10 @@ function Pedido() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>{item.nombre}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 12, color: '#999' }}>{item.precio.toFixed(2)}€ ud.</div>
+                    <div style={{ fontSize: 12, color: '#999' }}>{Number(item.precio).toFixed(2)}€ ud.</div>
                     {item.cantidad > 1 && (
                       <div style={{ fontSize: 12, color: 'var(--verde-oscuro)', fontWeight: 600 }}>
-                        · {(item.precio * item.cantidad).toFixed(2)}€
+                        · {(Number(item.precio) * item.cantidad).toFixed(2)}€
                       </div>
                     )}
                   </div>
@@ -210,7 +207,6 @@ function Pedido() {
           </div>
         </div>
 
-        {/* FRANJAS HORARIAS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Franja de recogida
@@ -255,7 +251,6 @@ function Pedido() {
           )}
         </div>
 
-        {/* COMENTARIOS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Comentarios (opcional)
@@ -274,7 +269,6 @@ function Pedido() {
           />
         </div>
 
-        {/* TOTAL */}
         <div style={{
           background: 'white', borderRadius: 12,
           padding: '12px 14px',
@@ -287,7 +281,6 @@ function Pedido() {
         </div>
       </div>
 
-      {/* BOTÓN CONFIRMAR */}
       <div style={{
         position: 'fixed', bottom: 0, left: '50%',
         transform: 'translateX(-50%)',

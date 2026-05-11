@@ -4,6 +4,7 @@ import Inicio from './pages/Inicio'
 import Menu from './pages/Menu'
 import Pedido from './pages/Pedido'
 import Confirmacion from './pages/Confirmacion'
+import Pago from './pages/Pago'
 import DetalleProducto from './pages/DetalleProducto'
 import MisPedidos from './pages/MisPedidos'
 import Notificaciones from './pages/Notificaciones'
@@ -17,6 +18,7 @@ function App() {
         <Route path="/inicio" element={<Inicio />} />
         <Route path="/menu" element={<Menu />} />
         <Route path="/pedido" element={<Pedido />} />
+        <Route path="/pago" element={<Pago />} />
         <Route path="/confirmacion" element={<Confirmacion />} />
         <Route path="/producto/:id" element={<DetalleProducto />} />
         <Route path="/pedidos" element={<MisPedidos />} />

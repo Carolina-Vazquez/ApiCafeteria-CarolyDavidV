@@ -19,6 +19,9 @@ urlpatterns = [
     path('orders/me/', views.HistorialPedidosView.as_view(), name='historial-pedidos'),
     path('orders/<int:pk>/', views.DetallePedidoView.as_view(), name='detalle-pedido'),
 
+    # Pagos
+    path('payments/create-intent/', views.CreatePaymentIntentView.as_view(), name='create-payment-intent'),
+
     # Admin
     path('admin/orders/', views.AdminPedidosView.as_view(), name='admin-pedidos'),
     path('orders/<int:pk>/status/', views.ActualizarEstadoPedidoView.as_view(), name='actualizar-estado'),
@@ -27,7 +30,6 @@ urlpatterns = [
     path('products/<int:pk>/', views.ProductoDetailUpdateView.as_view(), name='producto-detail-update'),
     path('categorias/', views.CategoriaListCreateView.as_view(), name='categoria-list-create'),
     path('alergenos/', views.AlergenoListView.as_view(), name='alergeno-list'),
-    path('products/<int:pk>/', views.ProductoDetailUpdateView.as_view(), name='producto-detail-update'),
     path('categorias/<int:pk>/', views.CategoriaDetailView.as_view(), name='categoria-detail'),
     path('admin/stats/', views.AdminStatsView.as_view(), name='admin-stats'),
 ]

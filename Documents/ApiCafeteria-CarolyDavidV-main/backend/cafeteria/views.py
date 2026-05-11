@@ -18,7 +18,9 @@ from django.db.models import Count, Sum, Avg
 from django.utils import timezone
 from datetime import timedelta
 from rest_framework import parsers
-
+import os
+import stripe
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 
 # ── AUTH ──────────────────────────────────────────────
@@ -307,3 +309,15 @@ class AdminStatsView(APIView):
             'pedidos_semana': pedidos_semana,
             'top_productos': list(top_productos)
         })
+class CreatePaymentIntentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        amount = int(float(request.data.get('amount', 0)) * 100)
+        pedido_id = request.data.get('pedido_id')
+        intent = stripe.PaymentIntent.create(
+            amount=amount,
+            currency='eur',
+            metadata={'pedido_id': pedido_id}
+        )
+        return Response({'client_secret': intent.client_secret})
