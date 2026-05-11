@@ -837,10 +837,18 @@ function AdminCafeteria() {
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--crema)' }}>{getTitulo()}</div>
             <div style={{ fontSize: 12, color: 'rgba(245,240,232,0.6)', marginTop: 2 }}>{getSubtitulo()}</div>
           </div>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--verde-medio)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white', cursor: 'pointer' }}
-            onClick={() => { localStorage.removeItem('token'); localStorage.removeItem('user'); navigate('/') }}>
-            {user.name?.[0]?.toUpperCase() || 'AD'}
-          </div>
+          <div
+  style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--verde-medio)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white', cursor: 'pointer' }}
+  onClick={() => {
+    if (window.confirm('¿Seguro que quieres cerrar sesión?')) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      navigate('/')
+    }
+  }}
+>
+  {user.name?.[0]?.toUpperCase() || 'AD'}
+</div>
         </div>
       </div>
 

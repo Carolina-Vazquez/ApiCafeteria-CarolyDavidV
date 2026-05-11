@@ -107,7 +107,10 @@ function Menu() {
   const [cargandoProductos, setCargandoProductos] = useState(true)
   const [categoriaActiva, setCategoriaActiva] = useState('Favoritos')
   const [busqueda, setBusqueda] = useState('')
-  const [carrito, setCarrito] = useState([])
+  const [carrito, setCarrito] = useState(() => {
+  const carritoGuardado = localStorage.getItem('carrito')
+  return carritoGuardado ? JSON.parse(carritoGuardado) : []
+})
   const [favoritos, setFavoritos] = useState(() => {
     const guardados = localStorage.getItem('favoritos')
     return guardados ? JSON.parse(guardados) : []
@@ -145,6 +148,11 @@ function Menu() {
     const notifs = JSON.parse(localStorage.getItem('notificaciones') || '[]')
     setNotifNoLeidas(notifs.filter(n => !n.leida).length)
   }, [])
+
+  useEffect(() => {
+  localStorage.setItem('carrito', JSON.stringify(carrito))
+}, [carrito])
+
 
   const categorias = ['Favoritos', ...new Set(productos.map(p => p.categoria?.nombre).filter(Boolean))]
 
@@ -201,7 +209,6 @@ function Menu() {
 
   const totalCarrito = carrito.reduce((acc, p) => acc + Number(p.precio) * p.cantidad, 0)
   const totalArticulos = carrito.reduce((acc, p) => acc + p.cantidad, 0)
-
   const irAPedido = () => {
     localStorage.setItem('carrito', JSON.stringify(carrito))
     navigate('/pedido')
@@ -217,7 +224,15 @@ function Menu() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)' }}>Buenos días, {user.name || 'Usuario'}</div>
+            <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)' }}>
+  {(() => {
+    const hora = new Date().getHours()
+    if (hora < 12) return `Buenos días, ${user.name || 'Usuario'}`
+    if (hora < 20) return `Buenas tardes, ${user.name || 'Usuario'}`
+    return `Buenas noches, ${user.name || 'Usuario'}`
+  })()
+  }
+</div>
             <div style={{ fontSize: 20, fontWeight: 500, color: 'var(--crema)' }}>¿Qué quieres hoy?</div>
           </div>
           <button

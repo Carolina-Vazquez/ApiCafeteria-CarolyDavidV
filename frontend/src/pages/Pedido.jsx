@@ -8,6 +8,7 @@ function Pedido() {
   const [franjas, setFranjas] = useState([])
   const [pedidoManana, setPedidoManana] = useState(false)
   const cargado = useRef(false)
+  const [comentario, setComentario] = useState('')
 
   useEffect(() => {
     if (cargado.current) return
@@ -100,15 +101,69 @@ function Pedido() {
 
   const total = carrito.reduce((acc, p) => acc + p.precio * p.cantidad, 0)
 
-  const handleConfirmar = () => {
-    if (!franjaSeleccionada || carrito.length === 0) return
+  const handleConfirmar = async () => {
+  if (!franjaSeleccionada || carrito.length === 0) return
+
+  const franja = franjas.find(f => f.id === franjaSeleccionada)
+
+  try {
+    const token = localStorage.getItem('token')
+    const body = {
+      franja_id: franjaSeleccionada,
+      total: total,
+      items: carrito.map(p => ({
+        producto_id: p.id,
+        cantidad: p.cantidad
+      }))
+    }
+
+    if (token && token !== 'token-prueba') {
+      const res = await fetch('http://127.0.0.1:8000/api/orders/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      })
+
+      if (res.ok) {
+  const pedidoReal = await res.json()
+  localStorage.setItem('pedido', JSON.stringify({
+    ...pedidoReal,
+    carrito,
+    franja,
+    total,
+    comentario
+  }))
+  navigate('/confirmacion')
+  return
+}
+    }
+
+    // Fallback sin token real
+    localStorage.setItem('pedido', JSON.stringify({
+  carrito,
+  franja,
+  total,
+  comentario,
+  estado: 'PENDIENTE_PAGO',
+  fecha: new Date().toISOString()
+}))
+    navigate('/confirmacion')
+
+  } catch {
+    // Si falla el backend igual navegamos
     localStorage.setItem('pedido', JSON.stringify({
       carrito,
-      franja: franjas.find(f => f.id === franjaSeleccionada),
-      total
+      franja,
+      total,
+      estado: 'PENDIENTE_PAGO',
+      fecha: new Date().toISOString()
     }))
     navigate('/confirmacion')
   }
+}
 
   if (carrito.length === 0) {
     return (
@@ -261,17 +316,19 @@ function Pedido() {
             Comentarios (opcional)
           </div>
           <textarea
-            placeholder="¿Algún comentario sobre tu pedido?"
-            maxLength={200}
-            style={{
-              width: '100%', background: 'white',
-              border: '1.5px solid #ddd', borderRadius: 12,
-              padding: '12px 14px', fontSize: 13,
-              color: 'var(--gris-texto)', resize: 'none',
-              height: 80, fontFamily: 'Inter, sans-serif',
-              outline: 'none'
-            }}
-          />
+  value={comentario}
+  onChange={e => setComentario(e.target.value)}
+  placeholder="¿Algún comentario sobre tu pedido?"
+  maxLength={200}
+  style={{
+    width: '100%', background: 'white',
+    border: '1.5px solid #ddd', borderRadius: 12,
+    padding: '12px 14px', fontSize: 13,
+    color: 'var(--gris-texto)', resize: 'none',
+    height: 80, fontFamily: 'Inter, sans-serif',
+    outline: 'none'
+  }}
+/>
         </div>
 
         {/* TOTAL */}

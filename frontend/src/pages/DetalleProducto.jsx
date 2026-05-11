@@ -1,16 +1,29 @@
-import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation, useParams } from 'react-router-dom'
 
 function DetalleProducto() {
   const navigate = useNavigate()
   const location = useLocation()
-  const producto = location.state?.producto
+  const { id } = useParams()
+  const [producto, setProducto] = useState(location.state?.producto || null)
+  const [cargando, setCargando] = useState(true)
   const [cantidad, setCantidad] = useState(1)
 
-  if (!producto) {
-    navigate('/menu')
-    return null
-  }
+  useEffect(() => {
+    fetch(`http://127.0.0.1:8000/api/products/${id}/`)
+      .then(res => res.json())
+      .then(data => {
+        setProducto(data)
+        setCargando(false)
+      })
+      .catch(() => {
+        // Si falla usamos el producto del state
+        if (location.state?.producto) {
+          setProducto(location.state.producto)
+        }
+        setCargando(false)
+      })
+  }, [id])
 
   const añadirAlCarrito = () => {
     const carritoActual = JSON.parse(localStorage.getItem('carrito') || '[]')
@@ -34,6 +47,19 @@ function DetalleProducto() {
     return '#fceef0'
   }
 
+  if (cargando) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--crema)' }}>
+        <div style={{ fontSize: 14, color: '#888' }}>Cargando producto...</div>
+      </div>
+    )
+  }
+
+  if (!producto) {
+    navigate('/menu')
+    return null
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'white' }}>
 
@@ -41,14 +67,13 @@ function DetalleProducto() {
       <div style={{
         position: 'relative',
         height: '45vh',
-        background: colorFondo(producto.categoria),
+        background: colorFondo(producto.categoria?.nombre),
         display: 'flex', alignItems: 'center', justifyContent: 'center'
       }}>
-        {/* Botón volver */}
         <button
           onClick={() => navigate(-1)}
           style={{
-            position: 'absolute', top: 30, left: 20,
+            position: 'absolute', top: 8, left: 20,
             background: 'white', border: 'none',
             borderRadius: '50%', width: 40, height: 40,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -57,10 +82,9 @@ function DetalleProducto() {
           }}
         >←</button>
 
-        {/* Imagen o emoji */}
         {producto.imagen ? (
           <img
-            src={producto.imagen}
+            src={producto.imagen.startsWith('http') ? producto.imagen : `http://127.0.0.1:8000${producto.imagen}`}
             alt={producto.nombre}
             style={{ width: '70%', objectFit: 'contain' }}
           />
@@ -74,7 +98,6 @@ function DetalleProducto() {
         flex: 1, padding: '24px 20px',
         display: 'flex', flexDirection: 'column', gap: 12
       }}>
-        {/* Nombre y precio */}
         <div>
           <div style={{
             fontSize: 22, fontWeight: 700,
@@ -87,30 +110,21 @@ function DetalleProducto() {
             fontSize: 18, fontWeight: 600,
             color: '#1a1a18', marginTop: 6
           }}>
-            {producto.precio.toFixed(2)}€
+            {Number(producto.precio).toFixed(2)}€
           </div>
         </div>
 
         {/* Descripción */}
         {producto.descripcion && (
-          <div style={{
-            fontSize: 14, color: '#666',
-            lineHeight: 1.6
-          }}>
+          <div style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
             {producto.descripcion}
           </div>
         )}
 
         {/* Alérgenos */}
         {producto.alergenos && producto.alergenos.length > 0 && (
-          <div style={{
-            paddingTop: 12,
-            borderTop: '1px solid #f0ede8'
-          }}>
-            <div style={{
-              fontSize: 13, color: '#999',
-              lineHeight: 1.6
-            }}>
+          <div style={{ paddingTop: 12, borderTop: '1px solid #f0ede8' }}>
+            <div style={{ fontSize: 13, color: '#999', lineHeight: 1.6 }}>
               <span style={{ fontWeight: 500 }}>Alérgenos: </span>
               {producto.alergenos.map(a => a.nombre_display).join(' · ')}
             </div>
@@ -124,7 +138,6 @@ function DetalleProducto() {
         padding: '16px 20px 36px',
         background: 'white'
       }}>
-        {/* Total y selector cantidad */}
         <div style={{
           display: 'flex', justifyContent: 'space-between',
           alignItems: 'center', marginBottom: 16
@@ -132,14 +145,11 @@ function DetalleProducto() {
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#1a1a18' }}>TOTAL</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: '#1a1a18' }}>
-              {(producto.precio * cantidad).toFixed(2)}€
+              {(Number(producto.precio) * cantidad).toFixed(2)}€
             </div>
           </div>
 
-          {/* Selector cantidad */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 12
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => setCantidad(c => Math.max(1, c - 1))}
               style={{
@@ -151,10 +161,9 @@ function DetalleProducto() {
               }}
             >−</button>
             <div style={{
-              width: 40, height: 32,
-              border: '1.5px solid #ddd', borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 600, color: '#1a1a18'
+              width: 40, height: 32, border: '1.5px solid #ddd',
+              borderRadius: 8, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 14, fontWeight: 600, color: '#1a1a18'
             }}>
               {String(cantidad).padStart(2, '0')}
             </div>
@@ -171,7 +180,6 @@ function DetalleProducto() {
           </div>
         </div>
 
-        {/* Botón añadir al carrito */}
         <button
           onClick={añadirAlCarrito}
           style={{
@@ -187,10 +195,9 @@ function DetalleProducto() {
           <span>+ Añadir al carrito</span>
           <div style={{
             background: 'rgba(255,255,255,0.15)',
-            borderRadius: 50, padding: '4px 12px',
-            fontSize: 14
+            borderRadius: 50, padding: '4px 12px', fontSize: 14
           }}>
-            {(producto.precio * cantidad).toFixed(2)}€
+            {(Number(producto.precio) * cantidad).toFixed(2)}€
           </div>
         </button>
       </div>
