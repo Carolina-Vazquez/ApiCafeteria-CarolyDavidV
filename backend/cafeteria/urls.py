@@ -23,4 +23,11 @@ urlpatterns = [
     path('admin/orders/', views.AdminPedidosView.as_view(), name='admin-pedidos'),
     path('orders/<int:pk>/status/', views.ActualizarEstadoPedidoView.as_view(), name='actualizar-estado'),
     path('inventory/<int:pk>/', views.ActualizarInventarioView.as_view(), name='actualizar-inventario'),
+    path('config/', views.ConfiguracionCafeteriaView.as_view(), name='configuracion'),
+    path('products/<int:pk>/', views.ProductoDetailUpdateView.as_view(), name='producto-detail-update'),
+    path('categorias/', views.CategoriaListCreateView.as_view(), name='categoria-list-create'),
+    path('alergenos/', views.AlergenoListView.as_view(), name='alergeno-list'),
+    path('products/<int:pk>/', views.ProductoDetailUpdateView.as_view(), name='producto-detail-update'),
+    path('categorias/<int:pk>/', views.CategoriaDetailView.as_view(), name='categoria-detail'),
+    path('admin/stats/', views.AdminStatsView.as_view(), name='admin-stats'),
 ]

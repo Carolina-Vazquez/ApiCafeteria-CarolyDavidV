@@ -6,12 +6,19 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from .models import Categoria, Producto, FranjaHoraria, Pedido, LineaPedido
+from .models import Categoria, Producto, FranjaHoraria, Pedido, LineaPedido, ConfiguracionCafeteria, Alergeno
 from .serializers import (
     ProductoSerializer, FranjaHorariaSerializer,
-    PedidoSerializer, CrearPedidoSerializer, UserSerializer
+    PedidoSerializer, CrearPedidoSerializer, UserSerializer,
+    ConfiguracionCafeteriaSerializer, AlergenoSerializer,
+    CategoriaSerializer
 )
 from django.conf import settings
+from django.db.models import Count, Sum, Avg
+from django.utils import timezone
+from datetime import timedelta
+from rest_framework import parsers
+
 
 
 # ── AUTH ──────────────────────────────────────────────
@@ -192,3 +199,111 @@ class ActualizarInventarioView(APIView):
 
         producto.save()
         return Response(ProductoSerializer(producto).data, status=status.HTTP_200_OK)
+    
+class ConfiguracionCafeteriaView(APIView):
+    permission_classes = [permissions.AllowAny]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    def get(self, request):
+        config = ConfiguracionCafeteria.get()
+        serializer = ConfiguracionCafeteriaSerializer(config, context={'request': request})
+        return Response(serializer.data)
+
+    def put(self, request):
+        config = ConfiguracionCafeteria.get()
+        serializer = ConfiguracionCafeteriaSerializer(
+            config, data=request.data, partial=True, context={'request': request}
+        )
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+class CategoriaListCreateView(generics.ListCreateAPIView):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    permission_classes = [permissions.AllowAny]
+
+class AlergenoListView(generics.ListAPIView):
+    queryset = Alergeno.objects.all()
+    serializer_class = AlergenoSerializer
+    permission_classes = [permissions.AllowAny]
+
+class ProductoDetailUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class CategoriaDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    permission_classes = [permissions.AllowAny]
+
+class ProductoDetailUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Producto.objects.all()
+    serializer_class = ProductoSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+class AdminStatsView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        hoy = timezone.now().date()
+        inicio_semana = hoy - timedelta(days=hoy.weekday())
+
+        # Pedidos de hoy
+        pedidos_hoy = Pedido.objects.filter(
+            creado_en__date=hoy,
+            pagado=True
+        )
+
+        # Ingresos de hoy
+        ingresos_hoy = pedidos_hoy.aggregate(
+            total=Sum('total')
+        )['total'] or 0
+
+        # Pedidos en preparación
+        en_preparacion = Pedido.objects.filter(
+            estado='PREPARANDO'
+        ).count()
+
+        # Ticket medio
+        ticket_medio = pedidos_hoy.aggregate(
+            media=Avg('total')
+        )['media'] or 0
+
+        # Pedidos por día esta semana
+        pedidos_semana = []
+        dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie']
+        for i in range(5):
+            dia = inicio_semana + timedelta(days=i)
+            count = Pedido.objects.filter(
+                creado_en__date=dia,
+                pagado=True
+            ).count()
+            pedidos_semana.append({
+                'dia': dias[i],
+                'pedidos': count,
+                'esHoy': dia == hoy
+            })
+
+        # Productos más pedidos
+        top_productos = LineaPedido.objects.filter(
+            pedido__pagado=True
+        ).values(
+            'producto__id',
+            'producto__nombre',
+            'producto__emoji',
+            'producto__imagen'
+        ).annotate(
+            total_vendido=Sum('cantidad')
+        ).order_by('-total_vendido')[:5]
+
+        return Response({
+            'pedidos_hoy': pedidos_hoy.count(),
+            'ingresos_hoy': round(float(ingresos_hoy), 2),
+            'en_preparacion': en_preparacion,
+            'ticket_medio': round(float(ticket_medio), 2),
+            'pedidos_semana': pedidos_semana,
+            'top_productos': list(top_productos)
+        })

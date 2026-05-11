@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Categoria, Producto, FranjaHoraria, Pedido, LineaPedido
+from .models import Categoria, Producto, FranjaHoraria, Pedido, LineaPedido, Alergeno, ConfiguracionCafeteria
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,6 +14,12 @@ class CategoriaSerializer(serializers.ModelSerializer):
         model = Categoria
         fields = '__all__'
 
+class AlergenoSerializer(serializers.ModelSerializer):
+    nombre_display = serializers.CharField(source='get_nombre_display', read_only=True)
+    
+    class Meta:
+        model = Alergeno
+        fields = ['id', 'nombre', 'nombre_display', 'icono']
 
 class ProductoSerializer(serializers.ModelSerializer):
     categoria = CategoriaSerializer(read_only=True)
@@ -82,3 +88,18 @@ class CrearPedidoSerializer(serializers.Serializer):
             if int(item['cantidad']) <= 0:
                 raise serializers.ValidationError("La cantidad debe ser mayor que 0.")
         return items
+
+class ConfiguracionCafeteriaSerializer(serializers.ModelSerializer):
+    imagen_inicio = serializers.ImageField(required=False, allow_null=True)
+    
+    class Meta:
+        model = ConfiguracionCafeteria
+        fields = [
+            'hora_apertura', 'hora_cierre',
+            'hora_corte_turno1', 'hora_inicio_recreo', 'hora_fin_recreo',
+            'imagen_inicio'
+        ]
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff']
