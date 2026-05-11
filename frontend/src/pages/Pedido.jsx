@@ -7,8 +7,8 @@ function Pedido() {
   const [franjaSeleccionada, setFranjaSeleccionada] = useState(null)
   const [franjas, setFranjas] = useState([])
   const [pedidoManana, setPedidoManana] = useState(false)
-  const cargado = useRef(false)
   const [comentario, setComentario] = useState('')
+  const cargado = useRef(false)
 
   useEffect(() => {
     if (cargado.current) return
@@ -99,71 +99,19 @@ function Pedido() {
     actualizarCarrito(carrito.filter(p => p.id !== id))
   }
 
-  const total = carrito.reduce((acc, p) => acc + p.precio * p.cantidad, 0)
+  const total = carrito.reduce((acc, p) => acc + Number(p.precio) * p.cantidad, 0)
 
-  const handleConfirmar = async () => {
-  if (!franjaSeleccionada || carrito.length === 0) return
-
-  const franja = franjas.find(f => f.id === franjaSeleccionada)
-
-  try {
-    const token = localStorage.getItem('token')
-    const body = {
-      franja_id: franjaSeleccionada,
-      total: total,
-      items: carrito.map(p => ({
-        producto_id: p.id,
-        cantidad: p.cantidad
-      }))
-    }
-
-    if (token && token !== 'token-prueba') {
-      const res = await fetch('http://127.0.0.1:8000/api/orders/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-      })
-
-      if (res.ok) {
-  const pedidoReal = await res.json()
-  localStorage.setItem('pedido', JSON.stringify({
-    ...pedidoReal,
-    carrito,
-    franja,
-    total,
-    comentario
-  }))
-  navigate('/confirmacion')
-  return
-}
-    }
-
-    // Fallback sin token real
-    localStorage.setItem('pedido', JSON.stringify({
-  carrito,
-  franja,
-  total,
-  comentario,
-  estado: 'PENDIENTE_PAGO',
-  fecha: new Date().toISOString()
-}))
-    navigate('/confirmacion')
-
-  } catch {
-    // Si falla el backend igual navegamos
+  const handleConfirmar = () => {
+    if (!franjaSeleccionada || carrito.length === 0) return
     localStorage.setItem('pedido', JSON.stringify({
       carrito,
-      franja,
+      franja: franjas.find(f => f.id === franjaSeleccionada),
       total,
-      estado: 'PENDIENTE_PAGO',
+      comentario,
       fecha: new Date().toISOString()
     }))
-    navigate('/confirmacion')
+    navigate('/pago')
   }
-}
 
   if (carrito.length === 0) {
     return (
@@ -171,7 +119,7 @@ function Pedido() {
         <div style={{ background: 'var(--verde-oscuro)', padding: '16px 16px 24px' }}>
           <button
             onClick={() => navigate('/menu')}
-            style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block', marginTop: -8 }}
+            style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block' }}
           >←</button>
         </div>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -189,20 +137,17 @@ function Pedido() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--crema)' }}>
 
-      {/* HEADER */}
-<div style={{ background: 'var(--verde-oscuro)', padding: '16px 16px 24px' }}>
-  <button
-    onClick={() => navigate(-1)}
-    style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block' }}
-  >←</button>
-  <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--crema)' }}>Tu pedido</div>
-  <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)', marginTop: 2 }}>Elige la hora de recogida</div>
-</div>
+      <div style={{ background: 'var(--verde-oscuro)', padding: '16px 16px 24px' }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ background: 'none', border: 'none', color: 'rgba(245,240,232,0.8)', fontSize: 20, cursor: 'pointer', marginBottom: 8, display: 'block' }}
+        >←</button>
+        <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--crema)' }}>Tu pedido</div>
+        <div style={{ fontSize: 13, color: 'rgba(245,240,232,0.7)', marginTop: 2 }}>Elige la hora de recogida</div>
+      </div>
 
-      {/* CONTENIDO */}
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: '100px' }}>
 
-        {/* ARTÍCULOS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Artículos seleccionados
@@ -218,64 +163,36 @@ function Pedido() {
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>{item.nombre}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 12, color: '#999' }}>{item.precio.toFixed(2)}€ ud.</div>
+                    <div style={{ fontSize: 12, color: '#999' }}>{Number(item.precio).toFixed(2)}€ ud.</div>
                     {item.cantidad > 1 && (
                       <div style={{ fontSize: 12, color: 'var(--verde-oscuro)', fontWeight: 600 }}>
-                        · {(item.precio * item.cantidad).toFixed(2)}€
+                        · {(Number(item.precio) * item.cantidad).toFixed(2)}€
                       </div>
                     )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button
-                    onClick={() => reducirCantidad(item.id)}
-                    style={{
-                      width: 24, height: 24, borderRadius: '50%',
-                      border: '1.5px solid #ddd', background: 'white',
-                      fontSize: 14, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: '#1a1a18'
-                    }}
-                  >−</button>
+                  <button onClick={() => reducirCantidad(item.id)}
+                    style={{ width: 24, height: 24, borderRadius: '50%', border: '1.5px solid #ddd', background: 'white', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1a1a18' }}>−</button>
                   <span style={{ fontSize: 13, fontWeight: 600, minWidth: 20, textAlign: 'center' }}>
                     {String(item.cantidad).padStart(2, '0')}
                   </span>
-                  <button
-                    onClick={() => aumentarCantidad(item.id)}
-                    style={{
-                      width: 24, height: 24, borderRadius: '50%',
-                      border: 'none', background: 'var(--verde-oscuro)',
-                      fontSize: 14, cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'white'
-                    }}
-                  >+</button>
+                  <button onClick={() => aumentarCantidad(item.id)}
+                    style={{ width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'var(--verde-oscuro)', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>+</button>
                 </div>
-                <button
-                  onClick={() => eliminarProducto(item.id)}
-                  style={{
-                    background: 'none', border: 'none',
-                    fontSize: 16, cursor: 'pointer',
-                    color: '#ff5252', padding: '4px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}
-                >🗑️</button>
+                <button onClick={() => eliminarProducto(item.id)}
+                  style={{ background: 'none', border: 'none', fontSize: 16, cursor: 'pointer', color: '#ff5252', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑️</button>
               </div>
             ))}
           </div>
         </div>
 
-        {/* FRANJAS HORARIAS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Franja de recogida
           </div>
           {pedidoManana && (
-            <div style={{
-              background: '#fff8e1', border: '1.5px solid #ffe082',
-              borderRadius: 12, padding: '10px 14px',
-              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10
-            }}>
+            <div style={{ background: '#fff8e1', border: '1.5px solid #ffe082', borderRadius: 12, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <span style={{ fontSize: 18 }}>📅</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, color: '#f57c00' }}>Pedido para mañana</div>
@@ -310,28 +227,26 @@ function Pedido() {
           )}
         </div>
 
-        {/* COMENTARIOS */}
         <div>
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--gris-texto)', marginBottom: 10 }}>
             Comentarios (opcional)
           </div>
           <textarea
-  value={comentario}
-  onChange={e => setComentario(e.target.value)}
-  placeholder="¿Algún comentario sobre tu pedido?"
-  maxLength={200}
-  style={{
-    width: '100%', background: 'white',
-    border: '1.5px solid #ddd', borderRadius: 12,
-    padding: '12px 14px', fontSize: 13,
-    color: 'var(--gris-texto)', resize: 'none',
-    height: 80, fontFamily: 'Inter, sans-serif',
-    outline: 'none'
-  }}
-/>
+            value={comentario}
+            onChange={e => setComentario(e.target.value)}
+            placeholder="¿Algún comentario sobre tu pedido?"
+            maxLength={200}
+            style={{
+              width: '100%', background: 'white',
+              border: '1.5px solid #ddd', borderRadius: 12,
+              padding: '12px 14px', fontSize: 13,
+              color: 'var(--gris-texto)', resize: 'none',
+              height: 80, fontFamily: 'Inter, sans-serif',
+              outline: 'none'
+            }}
+          />
         </div>
 
-        {/* TOTAL */}
         <div style={{
           background: 'white', borderRadius: 12,
           padding: '12px 14px',
@@ -344,7 +259,6 @@ function Pedido() {
         </div>
       </div>
 
-      {/* BOTÓN CONFIRMAR */}
       <div style={{
         position: 'fixed', bottom: 0, left: '50%',
         transform: 'translateX(-50%)',

@@ -6,7 +6,7 @@ from .models import Categoria, Producto, FranjaHoraria, Pedido, LineaPedido, Ale
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff']
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
@@ -14,25 +14,28 @@ class CategoriaSerializer(serializers.ModelSerializer):
         model = Categoria
         fields = '__all__'
 
+
 class AlergenoSerializer(serializers.ModelSerializer):
     nombre_display = serializers.CharField(source='get_nombre_display', read_only=True)
-    
+
     class Meta:
         model = Alergeno
-        fields = ['id', 'nombre', 'nombre_display', 'icono']
+        fields = ['id', 'nombre', 'nombre_display']
+
 
 class ProductoSerializer(serializers.ModelSerializer):
     categoria = CategoriaSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(
         queryset=Categoria.objects.all(), source='categoria', write_only=True
     )
+    alergenos = AlergenoSerializer(many=True, read_only=True)
 
     class Meta:
         model = Producto
         fields = [
             'id', 'nombre', 'descripcion', 'precio',
             'imagen', 'emoji', 'categoria', 'categoria_id',
-            'disponible', 'stock'
+            'disponible', 'stock', 'alergenos'
         ]
 
 
@@ -77,9 +80,7 @@ class PedidoSerializer(serializers.ModelSerializer):
 class CrearPedidoSerializer(serializers.Serializer):
     franja_id = serializers.IntegerField()
     total = serializers.DecimalField(max_digits=8, decimal_places=2)
-    items = serializers.ListField(
-        child=serializers.DictField()
-    )
+    items = serializers.ListField(child=serializers.DictField())
 
     def validate_items(self, items):
         for item in items:
@@ -89,9 +90,10 @@ class CrearPedidoSerializer(serializers.Serializer):
                 raise serializers.ValidationError("La cantidad debe ser mayor que 0.")
         return items
 
+
 class ConfiguracionCafeteriaSerializer(serializers.ModelSerializer):
     imagen_inicio = serializers.ImageField(required=False, allow_null=True)
-    
+
     class Meta:
         model = ConfiguracionCafeteria
         fields = [
@@ -99,7 +101,3 @@ class ConfiguracionCafeteriaSerializer(serializers.ModelSerializer):
             'hora_corte_turno1', 'hora_inicio_recreo', 'hora_fin_recreo',
             'imagen_inicio'
         ]
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'is_staff']

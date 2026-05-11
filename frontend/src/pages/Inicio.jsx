@@ -5,22 +5,27 @@ function Inicio() {
   const navigate = useNavigate()
   const [menuAbierto, setMenuAbierto] = useState(false)
   const [notifNoLeidas, setNotifNoLeidas] = useState(0)
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
   const [imagenInicio, setImagenInicio] = useState(null)
-  
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+
   useEffect(() => {
-  fetch('http://127.0.0.1:8000/api/config/')
-    .then(res => res.json())
-    .then(data => {
-      if (data.imagen_inicio) {
-        const url = data.imagen_inicio.startsWith('http')
-          ? data.imagen_inicio
-          : `http://127.0.0.1:8000${data.imagen_inicio}`
-        setImagenInicio(url)
-      }
-    })
-    .catch(() => {})
-}, [])
+    fetch('http://127.0.0.1:8000/api/config/')
+      .then(res => res.json())
+      .then(data => {
+        if (data.imagen_inicio) {
+          const url = data.imagen_inicio.startsWith('http')
+            ? data.imagen_inicio
+            : `http://127.0.0.1:8000${data.imagen_inicio}`
+          setImagenInicio(url)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const notifs = JSON.parse(localStorage.getItem('notificaciones') || '[]')
+    setNotifNoLeidas(notifs.filter(n => !n.leida).length)
+  }, [])
 
   const handleCerrarSesion = () => {
     localStorage.removeItem('token')
@@ -33,22 +38,22 @@ function Inicio() {
 
       {/* IMAGEN SUPERIOR */}
       <div style={{
-  position: 'relative',
-  height: '68vh',
-  background: 'linear-gradient(135deg, #2D4A3E 0%, #4a7a65 40%, #3d6354 100%)',
-  overflow: 'hidden'
-}}>
-  {imagenInicio && (
-    <img
-      src={imagenInicio}
-      alt="cafetería"
-      style={{
-        position: 'absolute', inset: 0,
-        width: '100%', height: '100%',
-        objectFit: 'cover', zIndex: 0
-      }}
-    />
-  )}
+        position: 'relative',
+        height: '68vh',
+        background: 'linear-gradient(135deg, #2D4A3E 0%, #4a7a65 40%, #3d6354 100%)',
+        overflow: 'hidden'
+      }}>
+        {imagenInicio && (
+          <img
+            src={imagenInicio}
+            alt="cafetería"
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover', zIndex: 0
+            }}
+          />
+        )}
         <div style={{
           position: 'absolute', inset: 0,
           background: 'linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.15) 100%)',
@@ -77,10 +82,7 @@ function Inicio() {
         </div>
 
         {/* SALUDO */}
-        <div style={{
-          position: 'absolute', top: 100, left: 24,
-          zIndex: 10
-        }}>
+        <div style={{ position: 'absolute', top: 100, left: 24, zIndex: 10 }}>
           <div style={{
             fontSize: 42, fontWeight: 700,
             color: 'white', lineHeight: 1.1,
@@ -102,12 +104,9 @@ function Inicio() {
       {/* FRANJA INFERIOR BLANCA */}
       <div style={{
         background: 'white',
-        padding: '50px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12
+        padding: '28px 24px',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 12
       }}>
         <button
           onClick={() => navigate('/menu')}
@@ -118,16 +117,15 @@ function Inicio() {
             fontSize: 16, fontWeight: 600,
             display: 'flex', alignItems: 'center',
             justifyContent: 'space-between',
-            cursor: 'pointer',
-            fontFamily: 'Inter, sans-serif'
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif'
           }}
         >
           <span>Pide ahora</span>
           <div style={{
             width: 36, height: 36, borderRadius: '50%',
-background: 'rgba(255,255,255,0.15)',
-display: 'flex', alignItems: 'center', justifyContent: 'center',
-fontSize: 16, lineHeight: 1, paddingLeft: 2
+            background: 'rgba(255,255,255,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, lineHeight: 1, paddingLeft: 2
           }}>→</div>
         </button>
       </div>
@@ -136,11 +134,7 @@ fontSize: 16, lineHeight: 1, paddingLeft: 2
       {menuAbierto && (
         <div
           onClick={() => setMenuAbierto(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 20
-          }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 20 }}
         />
       )}
 
@@ -154,8 +148,6 @@ fontSize: 16, lineHeight: 1, paddingLeft: 2
         transition: 'transform 0.3s ease',
         display: 'flex', flexDirection: 'column'
       }}>
-
-        {/* Cabecera perfil */}
         <div style={{
           padding: '52px 24px 28px',
           borderBottom: '1px solid rgba(255,255,255,0.15)',
@@ -165,36 +157,24 @@ fontSize: 16, lineHeight: 1, paddingLeft: 2
             width: 56, height: 56, borderRadius: '50%',
             background: 'var(--verde-medio)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 700, color: 'white',
-            flexShrink: 0
+            fontSize: 22, fontWeight: 700, color: 'white', flexShrink: 0
           }}>
             {user.name?.[0]?.toUpperCase() || 'U'}
           </div>
           <div>
-            <div style={{
-              fontSize: 17, fontWeight: 700, color: 'white',
-              letterSpacing: -0.3, fontFamily: 'Inter, sans-serif'
-            }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'white', letterSpacing: -0.3, fontFamily: 'Inter, sans-serif' }}>
               {user.name?.toUpperCase() || 'USUARIO'}
             </div>
-            <div style={{
-              fontSize: 12, color: 'rgba(255,255,255,0.5)',
-              marginTop: 3, fontFamily: 'Inter, sans-serif'
-            }}>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3, fontFamily: 'Inter, sans-serif' }}>
               Ver perfil
             </div>
           </div>
           <button
             onClick={() => setMenuAbierto(false)}
-            style={{
-              marginLeft: 'auto', background: 'none', border: 'none',
-              color: 'rgba(255,255,255,0.6)', fontSize: 22,
-              cursor: 'pointer', lineHeight: 1
-            }}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}
           >✕</button>
         </div>
 
-        {/* Opciones */}
         <div style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
           {[
             { icon: '🛍️', label: 'Mis pedidos', ruta: '/pedidos' },
@@ -212,20 +192,11 @@ fontSize: 16, lineHeight: 1, paddingLeft: 2
               }}
             >
               <span style={{ fontSize: 20 }}>{item.icon}</span>
-              <span style={{
-                fontSize: 16, color: 'white',
-                fontWeight: 500, letterSpacing: -0.2,
-                fontFamily: 'Inter, sans-serif', flex: 1
-              }}>
+              <span style={{ fontSize: 16, color: 'white', fontWeight: 500, letterSpacing: -0.2, fontFamily: 'Inter, sans-serif', flex: 1 }}>
                 {item.label}
               </span>
               {item.badge > 0 && (
-                <div style={{
-                  background: '#4CAF82', color: 'white',
-                  borderRadius: '50%', width: 20, height: 20,
-                  fontSize: 11, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
+                <div style={{ background: '#4CAF82', color: 'white', borderRadius: '50%', width: 20, height: 20, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {item.badge}
                 </div>
               )}
@@ -234,16 +205,13 @@ fontSize: 16, lineHeight: 1, paddingLeft: 2
           ))}
         </div>
 
-        {/* Cerrar sesión */}
         <div style={{ padding: '20px 24px 40px' }}>
           <button
             onClick={handleCerrarSesion}
             style={{
-              width: '100%',
-              background: 'rgba(255,255,255,0.1)',
+              width: '100%', background: 'rgba(255,255,255,0.1)',
               border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 50,
-              padding: '14px', fontSize: 14,
+              borderRadius: 50, padding: '14px', fontSize: 14,
               fontWeight: 500, color: '#ff8a80',
               cursor: 'pointer', letterSpacing: -0.2,
               fontFamily: 'Inter, sans-serif'

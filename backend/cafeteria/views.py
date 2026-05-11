@@ -1,5 +1,4 @@
-from rest_framework import generics, status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import generics, status, permissions, parsers
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -14,11 +13,13 @@ from .serializers import (
     CategoriaSerializer
 )
 from django.conf import settings
-from django.db.models import Count, Sum, Avg
+from django.db.models import Sum, Avg
 from django.utils import timezone
 from datetime import timedelta
-from rest_framework import parsers
+import os
+import stripe
 
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 
 # ── AUTH ──────────────────────────────────────────────
@@ -74,8 +75,8 @@ class ProductoListView(generics.ListAPIView):
         return queryset
 
 
-class ProductoDetailView(generics.RetrieveAPIView):
-    queryset = Producto.objects.filter(disponible=True)
+class ProductoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Producto.objects.all()
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -141,8 +142,14 @@ class DetallePedidoView(generics.RetrieveAPIView):
 
 # ── FRANJAS ───────────────────────────────────────────
 
-class FranjaHorariaListView(generics.ListAPIView):
+class FranjaHorariaListView(generics.ListCreateAPIView):
     queryset = FranjaHoraria.objects.filter(activa=True)
+    serializer_class = FranjaHorariaSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class FranjaHorariaDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = FranjaHoraria.objects.all()
     serializer_class = FranjaHorariaSerializer
     permission_classes = [permissions.AllowAny]
 
@@ -199,7 +206,8 @@ class ActualizarInventarioView(APIView):
 
         producto.save()
         return Response(ProductoSerializer(producto).data, status=status.HTTP_200_OK)
-    
+
+
 class ConfiguracionCafeteriaView(APIView):
     permission_classes = [permissions.AllowAny]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
@@ -219,30 +227,24 @@ class ConfiguracionCafeteriaView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
+
 class CategoriaListCreateView(generics.ListCreateAPIView):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [permissions.AllowAny]
 
-class AlergenoListView(generics.ListAPIView):
-    queryset = Alergeno.objects.all()
-    serializer_class = AlergenoSerializer
-    permission_classes = [permissions.AllowAny]
-
-class ProductoDetailUpdateView(generics.RetrieveUpdateAPIView):
-    queryset = Producto.objects.all()
-    serializer_class = ProductoSerializer
-    permission_classes = [permissions.IsAdminUser]
 
 class CategoriaDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
     permission_classes = [permissions.AllowAny]
 
-class ProductoDetailUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Producto.objects.all()
-    serializer_class = ProductoSerializer
-    permission_classes = [permissions.IsAdminUser]
+
+class AlergenoListView(generics.ListAPIView):
+    queryset = Alergeno.objects.all()
+    serializer_class = AlergenoSerializer
+    permission_classes = [permissions.AllowAny]
+
 
 class AdminStatsView(APIView):
     permission_classes = [permissions.IsAdminUser]
@@ -251,53 +253,23 @@ class AdminStatsView(APIView):
         hoy = timezone.now().date()
         inicio_semana = hoy - timedelta(days=hoy.weekday())
 
-        # Pedidos de hoy
-        pedidos_hoy = Pedido.objects.filter(
-            creado_en__date=hoy,
-            pagado=True
-        )
+        pedidos_hoy = Pedido.objects.filter(creado_en__date=hoy, pagado=True)
+        ingresos_hoy = pedidos_hoy.aggregate(total=Sum('total'))['total'] or 0
+        en_preparacion = Pedido.objects.filter(estado='PREPARANDO').count()
+        ticket_medio = pedidos_hoy.aggregate(media=Avg('total'))['media'] or 0
 
-        # Ingresos de hoy
-        ingresos_hoy = pedidos_hoy.aggregate(
-            total=Sum('total')
-        )['total'] or 0
-
-        # Pedidos en preparación
-        en_preparacion = Pedido.objects.filter(
-            estado='PREPARANDO'
-        ).count()
-
-        # Ticket medio
-        ticket_medio = pedidos_hoy.aggregate(
-            media=Avg('total')
-        )['media'] or 0
-
-        # Pedidos por día esta semana
         pedidos_semana = []
         dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie']
         for i in range(5):
             dia = inicio_semana + timedelta(days=i)
-            count = Pedido.objects.filter(
-                creado_en__date=dia,
-                pagado=True
-            ).count()
-            pedidos_semana.append({
-                'dia': dias[i],
-                'pedidos': count,
-                'esHoy': dia == hoy
-            })
+            count = Pedido.objects.filter(creado_en__date=dia, pagado=True).count()
+            pedidos_semana.append({'dia': dias[i], 'pedidos': count, 'esHoy': dia == hoy})
 
-        # Productos más pedidos
         top_productos = LineaPedido.objects.filter(
             pedido__pagado=True
         ).values(
-            'producto__id',
-            'producto__nombre',
-            'producto__emoji',
-            'producto__imagen'
-        ).annotate(
-            total_vendido=Sum('cantidad')
-        ).order_by('-total_vendido')[:5]
+            'producto__id', 'producto__nombre', 'producto__emoji', 'producto__imagen'
+        ).annotate(total_vendido=Sum('cantidad')).order_by('-total_vendido')[:5]
 
         return Response({
             'pedidos_hoy': pedidos_hoy.count(),
@@ -307,3 +279,45 @@ class AdminStatsView(APIView):
             'pedidos_semana': pedidos_semana,
             'top_productos': list(top_productos)
         })
+
+
+class CreatePaymentIntentView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        amount = int(float(request.data.get('amount', 0)) * 100)
+        pedido_id = request.data.get('pedido_id')
+        intent = stripe.PaymentIntent.create(
+            amount=amount,
+            currency='eur',
+            metadata={'pedido_id': pedido_id}
+        )
+        return Response({'client_secret': intent.client_secret})
+
+
+class StripeWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+
+        try:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, os.getenv('STRIPE_WEBHOOK_SECRET', '')
+            )
+        except Exception:
+            return Response(status=400)
+
+        if event['type'] == 'payment_intent.succeeded':
+            pedido_id = event['data']['object']['metadata'].get('pedido_id')
+            if pedido_id:
+                try:
+                    pedido = Pedido.objects.get(id=pedido_id)
+                    pedido.pagado = True
+                    pedido.estado = 'PAGADO'
+                    pedido.save()
+                except Pedido.DoesNotExist:
+                    pass
+
+        return Response({'status': 'ok'})
