@@ -67,7 +67,7 @@ class GoogleLoginView(APIView):
 
 # ── PRODUCTOS ─────────────────────────────────────────
 
-class ProductoListView(generics.ListAPIView):
+class ProductoListView(generics.ListCreateAPIView):
     serializer_class = ProductoSerializer
     permission_classes = [permissions.AllowAny]
 
