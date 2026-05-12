@@ -262,15 +262,21 @@ class AdminStatsView(APIView):
 
         pedidos_hoy = Pedido.objects.filter(creado_en__date=hoy, pagado=True)
         ingresos_hoy = pedidos_hoy.aggregate(total=Sum('total'))['total'] or 0
-        en_preparacion = Pedido.objects.filter(estado='PREPARANDO').count()
+        en_preparacion = Pedido.objects.filter(estado='PAGADO').count()
         ticket_medio = pedidos_hoy.aggregate(media=Avg('total'))['media'] or 0
 
         pedidos_semana = []
         dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie']
         for i in range(5):
             dia = inicio_semana + timedelta(days=i)
-            count = Pedido.objects.filter(creado_en__date=dia, pagado=True).count()
-            pedidos_semana.append({'dia': dias[i], 'pedidos': count, 'esHoy': dia == hoy})
+            pedidos_dia = Pedido.objects.filter(creado_en__date=dia, pagado=True)
+            ingresos_dia = pedidos_dia.aggregate(total=Sum('total'))['total'] or 0
+            pedidos_semana.append({
+                'dia': dias[i],
+                'pedidos': pedidos_dia.count(),
+                'ingresos': round(float(ingresos_dia), 2),
+                'esHoy': dia == hoy
+            })
 
         top_productos = LineaPedido.objects.filter(
             pedido__pagado=True

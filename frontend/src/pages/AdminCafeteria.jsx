@@ -6,6 +6,7 @@ function PestañaDashboard() {
   const [stats, setStats] = useState(null)
   const [proximosPedidos, setProximosPedidos] = useState([])
   const [cargando, setCargando] = useState(true)
+  const [tarjetaActiva, setTarjetaActiva] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -19,73 +20,202 @@ function PestañaDashboard() {
     ])
       .then(([statsData, pedidosData]) => {
         setStats(statsData)
-        setProximosPedidos(Array.isArray(pedidosData) ? pedidosData.slice(0, 3) : [])
+        setProximosPedidos(Array.isArray(pedidosData) ? pedidosData : [])
         setCargando(false)
       })
       .catch(() => {
-        setStats({ pedidos_hoy: 38, ingresos_hoy: 142, en_preparacion: 12, ticket_medio: 3.74 })
-        setProximosPedidos([
-          { id: 1, codigo: 'A7K2MN', usuario: { first_name: 'Lucía', last_name: 'M.' }, lineas: [{ producto: { nombre: 'Bowl verde' }, cantidad: 1 }], total: '4.70', estado: 'PREPARANDO', franja: { hora_inicio: '10:00', hora_fin: '10:15' } },
-          { id: 2, codigo: 'B3XK9P', usuario: { first_name: 'Carlos', last_name: 'R.' }, lineas: [{ producto: { nombre: 'Bocata mixto' }, cantidad: 2 }], total: '7.40', estado: 'LISTO', franja: { hora_inicio: '10:00', hora_fin: '10:15' } },
-        ])
+        setStats({ pedidos_hoy: 0, ingresos_hoy: 0, en_preparacion: 0, ticket_medio: 0, pedidos_semana: [], top_productos: [] })
+        setProximosPedidos([])
         setCargando(false)
       })
   }, [])
 
   if (cargando) return <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>Cargando dashboard...</div>
 
-  const proximaFranja = proximosPedidos[0]?.franja
-    ? `${proximosPedidos[0].franja.hora_inicio?.slice(0, 5)} – ${proximosPedidos[0].franja.hora_fin?.slice(0, 5)}`
-    : ''
+  const pedidosPendientes = proximosPedidos.filter(p => p.estado === 'PAGADO')
+  const pedidosHoy = proximosPedidos
+  const maxImporte = Math.max(...(stats.pedidos_semana?.map(d => d.pedidos) || [1]), 1)
+
+  const renderDetalle = () => {
+    if (!tarjetaActiva) return null
+
+    const mensajeVacio = (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 0' }}>
+        <div style={{ fontSize: 36 }}>📋</div>
+        <div style={{ fontSize: 14, color: '#888' }}>Todavía no se han realizado pedidos hoy</div>
+      </div>
+    )
+
+    if (tarjetaActiva === 'pendientes') {
+      return (
+        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)', marginBottom: 4 }}>
+            Pedidos pendientes de preparar
+          </div>
+          {pedidosPendientes.length === 0 ? mensajeVacio : pedidosPendientes.map(pedido => (
+            <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #f0ede8' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--verde-oscuro)', minWidth: 72 }}>{pedido.codigo}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, color: '#2a2a28' }}>{pedido.usuario?.first_name} {pedido.usuario?.last_name}</div>
+                <div style={{ fontSize: 11, color: '#888' }}>
+                  {pedido.lineas?.map(l => l.producto?.nombre).join(', ')}
+                </div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)' }}>{Number(pedido.total).toFixed(2)}€</div>
+            </div>
+          ))}
+        </div>
+      )
+    }
+
+    if (tarjetaActiva === 'total') {
+      return (
+        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)', marginBottom: 4 }}>
+            Todos los pedidos de hoy
+          </div>
+          {pedidosHoy.length === 0 ? mensajeVacio : pedidosHoy.map(pedido => {
+            const colorEstado = {
+              'PAGADO': { bg: '#e3f2fd', color: '#1565c0' },
+              'LISTO': { bg: '#e8f5e9', color: '#2e7d32' },
+              'ENTREGADO': { bg: '#f5f5f5', color: '#616161' },
+            }[pedido.estado] || { bg: '#f5f5f5', color: '#616161' }
+            return (
+              <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #f0ede8' }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--verde-oscuro)', minWidth: 72 }}>{pedido.codigo}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: '#2a2a28' }}>{pedido.usuario?.first_name} {pedido.usuario?.last_name}</div>
+                  <div style={{ fontSize: 11, color: '#888' }}>
+                    ⏰ {pedido.franja?.hora_inicio?.slice(0, 5)} – {pedido.franja?.hora_fin?.slice(0, 5)}
+                  </div>
+                </div>
+                <div style={{ background: colorEstado.bg, color: colorEstado.color, borderRadius: 50, padding: '3px 10px', fontSize: 11, fontWeight: 500 }}>
+                  {pedido.estado}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )
+    }
+
+    if (tarjetaActiva === 'ingresos') {
+  // Agrupar pedidos por franja
+  const porFranja = pedidosHoy.reduce((acc, pedido) => {
+    const key = `${pedido.franja?.hora_inicio?.slice(0, 5)} – ${pedido.franja?.hora_fin?.slice(0, 5)}`
+    if (!acc[key]) acc[key] = { pedidos: 0, total: 0 }
+    acc[key].pedidos += 1
+    acc[key].total += Number(pedido.total)
+    return acc
+  }, {})
+
+  return (
+    <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)', marginBottom: 4 }}>
+        Ingresos por franja horaria
+      </div>
+      {pedidosHoy.length === 0 ? mensajeVacio : (
+        <>
+          {Object.entries(porFranja).map(([franja, datos]) => (
+            <div key={franja} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0', borderBottom: '1px solid #f0ede8' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>⏰ {franja}</div>
+                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
+                  {datos.pedidos} pedido{datos.pedidos !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: '#2e7d32' }}>
+                +{datos.total.toFixed(2)}€
+              </div>
+            </div>
+          ))}
+          <div style={{ borderTop: '2px solid #f0ede8', paddingTop: 10, display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--gris-texto)' }}>Total del día</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--verde-oscuro)' }}>
+              +{pedidosHoy.reduce((acc, p) => acc + Number(p.total), 0).toFixed(2)}€
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+    if (tarjetaActiva === 'ticket') {
+      const importes = pedidosHoy.map(p => Number(p.total))
+      const maxImporte = Math.max(...importes, 1)
+      return (
+        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)', marginBottom: 4 }}>
+            Importes de pedidos de hoy
+          </div>
+          {pedidosHoy.length === 0 ? mensajeVacio : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+                {pedidosHoy.map((pedido, i) => (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: 9, color: '#888' }}>{Number(pedido.total).toFixed(0)}€</div>
+                    <div style={{
+                      width: '100%',
+                      background: 'var(--verde-oscuro)',
+                      borderRadius: '4px 4px 0 0',
+                      height: `${(Number(pedido.total) / maxImporte) * 60}px`,
+                      minHeight: 4
+                    }} />
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#888', borderTop: '1px solid #f0ede8', paddingTop: 8 }}>
+                <span>Ticket medio</span>
+                <span style={{ fontWeight: 600, color: 'var(--verde-oscuro)' }}>
+                  {(pedidosHoy.reduce((acc, p) => acc + Number(p.total), 0) / pedidosHoy.length).toFixed(2)}€
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+  }
+
+  const tarjetas = [
+    { id: 'pendientes', label: 'Pedidos pendientes', valor: stats.en_preparacion, sufijo: '' },
+    { id: 'total', label: 'Pedidos hoy', valor: stats.pedidos_hoy, sufijo: '' },
+    { id: 'ingresos', label: 'Ingresos hoy', valor: stats.ingresos_hoy, sufijo: '€' },
+    { id: 'ticket', label: 'Ticket medio', valor: stats.ticket_medio, sufijo: '€' },
+  ]
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Stats */}
+      {/* Tarjetas */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <div style={{ background: 'var(--verde-oscuro)', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 32, fontWeight: 700, color: 'white' }}>{stats.pedidos_hoy}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Pedidos hoy</div>
-        </div>
-        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--verde-oscuro)' }}>{stats.ingresos_hoy}€</div>
-          <div style={{ fontSize: 12, color: '#888' }}>Ingresos hoy</div>
-        </div>
-        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--gris-texto)' }}>{stats.en_preparacion}</div>
-          <div style={{ fontSize: 12, color: '#888' }}>En preparación</div>
-        </div>
-        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--verde-oscuro)' }}>{stats.ticket_medio}€</div>
-          <div style={{ fontSize: 12, color: '#888' }}>Ticket medio</div>
-        </div>
+        {tarjetas.map(tarjeta => (
+          <button
+            key={tarjeta.id}
+            onClick={() => setTarjetaActiva(tarjetaActiva === tarjeta.id ? null : tarjeta.id)}
+            style={{
+              background: tarjetaActiva === tarjeta.id ? 'var(--verde-oscuro)' : 'white',
+              border: tarjetaActiva === tarjeta.id ? 'none' : '1.5px solid #f0ede8',
+              borderRadius: 16, padding: '16px',
+              display: 'flex', flexDirection: 'column', gap: 4,
+              cursor: 'pointer', textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ fontSize: 28, fontWeight: 700, color: tarjetaActiva === tarjeta.id ? 'white' : 'var(--verde-oscuro)' }}>
+              {tarjeta.valor}{tarjeta.sufijo}
+            </div>
+            <div style={{ fontSize: 11, color: tarjetaActiva === tarjeta.id ? 'rgba(255,255,255,0.7)' : '#888' }}>
+              {tarjeta.label}
+            </div>
+          </button>
+        ))}
       </div>
 
-      {/* Próximos pedidos */}
-      {proximosPedidos.length > 0 && (
-        <div style={{ background: 'white', borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            Próxima franja · {proximaFranja}
-          </div>
-          {proximosPedidos.map(pedido => (
-            <div key={pedido.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f0ede8' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--verde-oscuro)', minWidth: 64 }}>{pedido.codigo}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>
-                  {pedido.usuario?.first_name} {pedido.usuario?.last_name}
-                </div>
-                <div style={{ fontSize: 11, color: '#888', marginTop: 2 }}>
-                  {pedido.lineas?.map(l => `${l.producto?.nombre}${l.cantidad > 1 ? ` x${l.cantidad}` : ''}`).join(' · ')}
-                </div>
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--gris-texto)', marginRight: 8 }}>
-                {Number(pedido.total).toFixed(2)}€
-              </div>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: pedido.estado === 'LISTO' ? '#4CAF82' : pedido.estado === 'PREPARANDO' ? '#FF9800' : '#1565c0', flexShrink: 0 }} />
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Detalle de la tarjeta activa */}
+      {renderDetalle()}
+
     </div>
   )
 }
@@ -167,7 +297,7 @@ function PestañaPedidos() {
         <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>Cargando pedidos...</div>
       ) : Object.keys(pedidosPorFranja).length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 60 }}>
-          <div style={{ fontSize: 48 }}>✅</div>
+          
           <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--gris-texto)' }}>No hay pedidos pendientes</div>
         </div>
       ) : (
@@ -458,6 +588,7 @@ function PestañaMenu() {
 function PestañaAnalisis() {
   const [stats, setStats] = useState(null)
   const [cargando, setCargando] = useState(true)
+  const [graficaActiva, setGraficaActiva] = useState('pedidos')
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -468,22 +599,18 @@ function PestañaAnalisis() {
       .then(data => { setStats(data); setCargando(false) })
       .catch(() => {
         setStats({
-          pedidos_hoy: 38,
-          ingresos_hoy: 142,
-          en_preparacion: 12,
-          ticket_medio: 3.74,
+          pedidos_hoy: 0,
+          ingresos_hoy: 0,
+          en_preparacion: 0,
+          ticket_medio: 0,
           pedidos_semana: [
-            { dia: 'Lun', pedidos: 24, esHoy: false },
-            { dia: 'Mar', pedidos: 31, esHoy: false },
-            { dia: 'Mié', pedidos: 28, esHoy: false },
-            { dia: 'Jue', pedidos: 38, esHoy: false },
-            { dia: 'Vie', pedidos: 42, esHoy: true },
+            { dia: 'Lun', pedidos: 0, ingresos: 0, esHoy: false },
+            { dia: 'Mar', pedidos: 0, ingresos: 0, esHoy: false },
+            { dia: 'Mié', pedidos: 0, ingresos: 0, esHoy: false },
+            { dia: 'Jue', pedidos: 0, ingresos: 0, esHoy: false },
+            { dia: 'Vie', pedidos: 0, ingresos: 0, esHoy: true },
           ],
-          top_productos: [
-            { producto__nombre: 'Café con leche', producto__emoji: '☕', total_vendido: 124 },
-            { producto__nombre: 'Bocata mixto', producto__emoji: '🥪', total_vendido: 98 },
-            { producto__nombre: 'Bowl verde', producto__emoji: '🥗', total_vendido: 76 },
-          ]
+          top_productos: []
         })
         setCargando(false)
       })
@@ -492,65 +619,121 @@ function PestañaAnalisis() {
   if (cargando) return <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>Cargando análisis...</div>
 
   const maxPedidos = Math.max(...stats.pedidos_semana.map(d => d.pedidos), 1)
+  const maxIngresos = Math.max(...stats.pedidos_semana.map(d => d.ingresos), 1)
+
+  const hayDatos = stats.pedidos_semana.some(d => d.pedidos > 0)
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: '100px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-      {/* Gráfico pedidos por día */}
+      {/* Selector de gráfica */}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {[
+          { id: 'pedidos', label: '📦 Pedidos' },
+          { id: 'ingresos', label: '💶 Ingresos' },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setGraficaActiva(tab.id)}
+            style={{
+              flex: 1, padding: '10px', borderRadius: 50,
+              border: graficaActiva === tab.id ? 'none' : '1.5px solid #ddd',
+              background: graficaActiva === tab.id ? 'var(--verde-oscuro)' : 'white',
+              color: graficaActiva === tab.id ? 'white' : 'var(--gris-texto)',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif'
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Gráfico */}
       <div style={{ background: 'white', borderRadius: 16, padding: '16px' }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gris-texto)', marginBottom: 16 }}>Pedidos por día</div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100 }}>
-          {stats.pedidos_semana.map((item, i) => (
-            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              <div style={{ fontSize: 10, color: 'var(--gris-texto)', fontWeight: 500 }}>{item.pedidos}</div>
-              <div style={{
-                width: '100%',
-                background: item.esHoy ? 'var(--verde-oscuro)' : 'var(--verde-claro)',
-                borderRadius: '6px 6px 0 0',
-                height: `${(item.pedidos / maxPedidos) * 70}px`,
-                transition: 'height 0.3s ease',
-                minHeight: 4
-              }} />
-              <div style={{
-                fontSize: 11,
-                color: item.esHoy ? 'var(--verde-oscuro)' : '#888',
-                fontWeight: item.esHoy ? 600 : 400
-              }}>
-                {item.dia}
-              </div>
-            </div>
-          ))}
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gris-texto)', marginBottom: 4 }}>
+          {graficaActiva === 'pedidos' ? 'Pedidos por día' : 'Ingresos por día'}
         </div>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>
+          Semana actual
+        </div>
+
+        {!hayDatos ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '24px 0' }}>
+            <div style={{ fontSize: 36 }}>📊</div>
+            <div style={{ fontSize: 14, color: '#888' }}>Todavía no hay datos esta semana</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 120 }}>
+            {stats.pedidos_semana.map((item, i) => {
+              const valor = graficaActiva === 'pedidos' ? item.pedidos : item.ingresos
+              const max = graficaActiva === 'pedidos' ? maxPedidos : maxIngresos
+              const altura = Math.max((valor / max) * 90, valor > 0 ? 8 : 0)
+              return (
+                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <div style={{ fontSize: 10, color: item.esHoy ? 'var(--verde-oscuro)' : '#888', fontWeight: item.esHoy ? 600 : 400 }}>
+                    {graficaActiva === 'pedidos' ? valor : `${valor}€`}
+                  </div>
+                  <div style={{
+                    width: '100%',
+                    background: item.esHoy ? 'var(--verde-oscuro)' : 'var(--verde-claro)',
+                    borderRadius: '6px 6px 0 0',
+                    height: `${altura}px`,
+                    minHeight: valor > 0 ? 4 : 0,
+                    transition: 'height 0.3s ease'
+                  }} />
+                  <div style={{
+                    fontSize: 11,
+                    color: item.esHoy ? 'var(--verde-oscuro)' : '#888',
+                    fontWeight: item.esHoy ? 600 : 400
+                  }}>
+                    {item.dia}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Productos más pedidos */}
       <div style={{ background: 'white', borderRadius: 16, padding: '16px' }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gris-texto)', marginBottom: 12 }}>Productos más pedidos</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {stats.top_productos.map((prod, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#888', minWidth: 20 }}>{i + 1}</div>
-              <div style={{
-                width: 36, height: 36, borderRadius: 10,
-                background: 'var(--crema)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20, overflow: 'hidden'
-              }}>
-                {prod.producto__imagen
-                  ? <img src={prod.producto__imagen} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  : prod.producto__emoji
-                }
-              </div>
-              <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>
-                {prod.producto__nombre}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)' }}>
-                {prod.total_vendido} uds
-              </div>
-            </div>
-          ))}
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--gris-texto)', marginBottom: 12 }}>
+          Productos más pedidos
         </div>
+        {stats.top_productos.length === 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0' }}>
+            <div style={{ fontSize: 36 }}>🍽️</div>
+            <div style={{ fontSize: 14, color: '#888' }}>Todavía no hay ventas registradas</div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {stats.top_productos.map((prod, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#888', minWidth: 20 }}>{i + 1}</div>
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: 'var(--crema)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, overflow: 'hidden'
+                }}>
+                  {prod.producto__imagen
+                    ? <img src={prod.producto__imagen.startsWith('http') ? prod.producto__imagen : `http://127.0.0.1:8000${prod.producto__imagen}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : prod.producto__emoji
+                  }
+                </div>
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#2a2a28' }}>
+                  {prod.producto__nombre}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--verde-oscuro)' }}>
+                  {prod.total_vendido} uds
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
     </div>
   )
 }
@@ -739,8 +922,8 @@ function PestañaAjustes() {
           { key: 'hora_apertura', label: 'Apertura' },
           { key: 'hora_cierre', label: 'Cierre' },
           { key: 'hora_corte_turno1', label: 'Corte turno 1' },
-          { key: 'hora_inicio_recreo', label: 'Inicio recreo' },
-          { key: 'hora_fin_recreo', label: 'Fin recreo' },
+          { key: 'hora_inicio_recreo', label: 'Recreo' },
+          { key: 'hora_fin_recreo', label: 'Inicio turno 2' },
         ].map(field => (
           <div key={field.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--gris-texto)' }}>{field.label}</span>
