@@ -22,7 +22,7 @@ function CheckoutForm({ pedido, total, franja }) {
       const token = localStorage.getItem('token')
 
       // 1. Crear pedido en el backend
-      const resPedido = await fetch('http://127.0.0.1:8000/api/orders/', {
+      const resPedido = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +38,7 @@ function CheckoutForm({ pedido, total, franja }) {
       if (!resPedido.ok) throw new Error('Error creando pedido')
 
       // 2. Crear PaymentIntent en el backend
-      const resIntent = await fetch('http://127.0.0.1:8000/api/payments/create-intent/', {
+      const resIntent = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/create-intent/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -19,7 +19,7 @@ function Notificaciones() {
 
   const consultarEstado = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/orders/me/`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/me/`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (!res.ok) return

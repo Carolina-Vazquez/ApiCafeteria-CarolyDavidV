@@ -7,13 +7,7 @@ function Confirmacion() {
   const franja = pedido.franja
   const total = pedido.total || 0
 
-  const codigo = pedido.codigo || (() => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    const nuevo = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-    const pedidoActualizado = { ...pedido, codigo: nuevo, fecha: new Date().toISOString() }
-    localStorage.setItem('pedido', JSON.stringify(pedidoActualizado))
-    return nuevo
-  })()
+  const codigo = pedido.codigo || 'PENDIENTE'
 
   if (!franja) {
     navigate('/menu')

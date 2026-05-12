@@ -17,7 +17,7 @@ function MisPedidos() {
       return
     }
 
-    fetch('http://127.0.0.1:8000/api/orders/me/', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/orders/me/`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())

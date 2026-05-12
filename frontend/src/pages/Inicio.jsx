@@ -9,13 +9,13 @@ function Inicio() {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/config/')
+    fetch(`${import.meta.env.VITE_API_URL}/api/config/`)
       .then(res => res.json())
       .then(data => {
         if (data.imagen_inicio) {
           const url = data.imagen_inicio.startsWith('http')
             ? data.imagen_inicio
-            : `http://127.0.0.1:8000${data.imagen_inicio}`
+            : `${import.meta.env.VITE_API_URL}${data.imagen_inicio}`
           setImagenInicio(url)
         }
       })

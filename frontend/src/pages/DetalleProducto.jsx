@@ -10,7 +10,7 @@ function DetalleProducto() {
   const [cantidad, setCantidad] = useState(1)
 
   useEffect(() => {
-    fetch(`http://127.0.0.1:8000/api/products/${id}/`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}/`)
       .then(res => res.json())
       .then(data => {
         setProducto(data)
@@ -84,7 +84,7 @@ function DetalleProducto() {
 
         {producto.imagen ? (
           <img
-            src={producto.imagen.startsWith('http') ? producto.imagen : `http://127.0.0.1:8000${producto.imagen}`}
+            src={producto.imagen.startsWith('http') ? producto.imagen : `${import.meta.env.VITE_API_URL}${producto.imagen}`}
             alt={producto.nombre}
             style={{ width: '70%', objectFit: 'contain' }}
           />

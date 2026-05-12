@@ -18,8 +18,8 @@ function Pedido() {
     const totalMinutos = ahora.getHours() * 60 + ahora.getMinutes()
 
     Promise.all([
-      fetch('http://127.0.0.1:8000/api/config/').then(r => r.json()),
-      fetch('http://127.0.0.1:8000/api/franjas/').then(r => r.json())
+      fetch(`${import.meta.env.VITE_API_URL}/api/config/`).then(r => r.json()),
+      fetch(`${import.meta.env.VITE_API_URL}/api/franjas/`).then(r => r.json())
     ])
       .then(([config, franjas]) => {
         const toMinutos = (hora) => {

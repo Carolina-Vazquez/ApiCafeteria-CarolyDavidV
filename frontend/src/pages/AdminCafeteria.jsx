@@ -11,10 +11,10 @@ function PestañaDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     Promise.all([
-      fetch('http://127.0.0.1:8000/api/admin/stats/', {
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/stats/`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(r => r.json()),
-      fetch('http://127.0.0.1:8000/api/admin/orders/', {
+      fetch(`${import.meta.env.VITE_API_URL}/api/admin/orders/`, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(r => r.json())
     ])
@@ -229,7 +229,7 @@ function PestañaPedidos() {
   const cargarPedidos = async () => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://127.0.0.1:8000/api/admin/orders/', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/orders/`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) setPedidos(await res.json())
@@ -254,7 +254,7 @@ function PestañaPedidos() {
   const cambiarEstado = async (pedidoId, nuevoEstado) => {
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`http://127.0.0.1:8000/api/orders/${pedidoId}/status/`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${pedidoId}/status/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ status: nuevoEstado })
@@ -296,9 +296,8 @@ function PestañaPedidos() {
       {cargando ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#888' }}>Cargando pedidos...</div>
       ) : Object.keys(pedidosPorFranja).length === 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 60 }}>
-          
-          <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--gris-texto)' }}>No hay pedidos pendientes</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 60 }}>  
+        <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--gris-texto)' }}>No hay pedidos pendientes</div>
         </div>
       ) : (
         Object.entries(pedidosPorFranja).map(([franja, pedidosFranja]) => (
@@ -378,9 +377,9 @@ function PestañaMenu() {
   const cargarDatos = async () => {
     try {
       const [prodRes, catRes, alerRes] = await Promise.all([
-        fetch('http://127.0.0.1:8000/api/products/'),
-        fetch('http://127.0.0.1:8000/api/categorias/'),
-        fetch('http://127.0.0.1:8000/api/alergenos/')
+        fetch(`${import.meta.env.VITE_API_URL}/api/products/`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/categorias/`),
+        fetch(`${import.meta.env.VITE_API_URL}/api/alergenos/`)
       ])
       if (prodRes.ok) setProductos(await prodRes.json())
       if (catRes.ok) setCategorias(await catRes.json())
@@ -432,7 +431,7 @@ function PestañaMenu() {
         else formData.append(key, val)
       })
       if (imagenFile) formData.append('imagen', imagenFile)
-      const url = productoEditando ? `http://127.0.0.1:8000/api/products/${productoEditando.id}/` : 'http://127.0.0.1:8000/api/products/'
+      const url = productoEditando ? `${import.meta.env.VITE_API_URL}/api/products/${productoEditando.id}/` : `${import.meta.env.VITE_API_URL}/api/products/`
       const method = productoEditando ? 'PUT' : 'POST'
       const res = await fetch(url, { method, headers: { Authorization: `Bearer ${token}` }, body: formData })
       if (res.ok) { cargarDatos(); cerrarFormulario() }
@@ -442,7 +441,7 @@ function PestañaMenu() {
   const eliminarProducto = async (id) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`http://127.0.0.1:8000/api/products/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       cargarDatos()
     } catch {
       setProductos(prev => prev.filter(p => p.id !== id))
@@ -468,7 +467,7 @@ function PestañaMenu() {
   const toggleDisponible = async (producto) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`http://127.0.0.1:8000/api/inventory/${producto.id}/`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/inventory/${producto.id}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ disponible: !producto.disponible })
@@ -592,7 +591,7 @@ function PestañaAnalisis() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    fetch('http://127.0.0.1:8000/api/admin/stats/', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/admin/stats/`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -718,7 +717,7 @@ function PestañaAnalisis() {
                   fontSize: 20, overflow: 'hidden'
                 }}>
                   {prod.producto__imagen
-                    ? <img src={prod.producto__imagen.startsWith('http') ? prod.producto__imagen : `http://127.0.0.1:8000${prod.producto__imagen}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ? <img src={prod.producto__imagen.startsWith('http') ? prod.producto__imagen : `${import.meta.env.VITE_API_URL}${prod.producto__imagen}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     : prod.producto__emoji
                   }
                 </div>
@@ -756,9 +755,9 @@ function PestañaAjustes() {
   const cargarDatos = async () => {
   try {
     const [confRes, franjasRes, catRes] = await Promise.all([
-      fetch('http://127.0.0.1:8000/api/config/'),
-      fetch('http://127.0.0.1:8000/api/franjas/'),
-      fetch('http://127.0.0.1:8000/api/categorias/')
+      fetch(`${import.meta.env.VITE_API_URL}/api/config/`),
+      fetch(`${import.meta.env.VITE_API_URL}/api/franjas/`),
+      fetch(`${import.meta.env.VITE_API_URL}/api/categorias/`)
     ])
     if (confRes.ok) {
       const confData = await confRes.json()
@@ -778,7 +777,7 @@ function PestañaAjustes() {
   try {
     const formData = new FormData()
     formData.append('imagen_inicio', imagenInicioFile)
-    const res = await fetch('http://127.0.0.1:8000/api/config/', {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/config/`, {
       method: 'PUT',
       body: formData
     })
@@ -799,7 +798,7 @@ function PestañaAjustes() {
     setGuardando(true)
     try {
       const token = localStorage.getItem('token')
-      await fetch('http://127.0.0.1:8000/api/config/', { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(config) })
+      await fetch(`${import.meta.env.VITE_API_URL}/api/config/`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(config) })
     } catch { }
     setGuardando(false)
   }
@@ -816,7 +815,7 @@ function PestañaAjustes() {
     if (!nuevaFranja.hora_inicio || !nuevaFranja.hora_fin) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://127.0.0.1:8000/api/franjas/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...nuevaFranja, activa: true }) })
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/franjas/`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...nuevaFranja, activa: true }) })
       if (res.ok) cargarDatos()
     } catch { setFranjas(prev => [...prev, { id: Date.now(), ...nuevaFranja }]) }
     setNuevaFranja({ hora_inicio: '', hora_fin: '' })
@@ -825,7 +824,7 @@ function PestañaAjustes() {
   const eliminarFranja = async (id) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`http://127.0.0.1:8000/api/franjas/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${import.meta.env.VITE_API_URL}/api/franjas/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       cargarDatos()
     } catch { setFranjas(prev => prev.filter(f => f.id !== id)) }
     setConfirmEliminarFranja(null)
@@ -835,7 +834,7 @@ function PestañaAjustes() {
     if (!nuevaCategoria.trim()) return
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch('http://127.0.0.1:8000/api/categorias/', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre: nuevaCategoria }) })
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/categorias/`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ nombre: nuevaCategoria }) })
       if (res.ok) { setNuevaCategoria(''); cargarDatos() }
     } catch { setCategorias(prev => [...prev, { id: Date.now(), nombre: nuevaCategoria }]); setNuevaCategoria('') }
   }
@@ -843,7 +842,7 @@ function PestañaAjustes() {
   const eliminarCategoria = async (id) => {
     try {
       const token = localStorage.getItem('token')
-      await fetch(`http://127.0.0.1:8000/api/categorias/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+      await fetch(`${import.meta.env.VITE_API_URL}/api/categorias/${id}/`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
       cargarDatos()
     } catch { setCategorias(prev => prev.filter(c => c.id !== id)) }
     setConfirmEliminarCat(null)

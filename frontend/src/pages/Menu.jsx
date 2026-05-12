@@ -122,7 +122,7 @@ function Menu() {
   const scrollingPorClick = useRef(false)
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/api/products/')
+    fetch(`${import.meta.env.VITE_API_URL}/api/products/`)
       .then(res => res.json())
       .then(data => {
         setProductos(data)
