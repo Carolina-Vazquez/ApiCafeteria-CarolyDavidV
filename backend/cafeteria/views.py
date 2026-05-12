@@ -323,7 +323,9 @@ class StripeWebhookView(APIView):
             return Response(status=400)
 
         if event['type'] == 'payment_intent.succeeded':
-            pedido_id = event['data']['object']['metadata'].get('pedido_id')
+            payment_intent = event['data']['object']
+            metadata = payment_intent.get('metadata') or {}
+            pedido_id = metadata.get('pedido_id') if isinstance(metadata, dict) else None
             if pedido_id:
                 try:
                     pedido = Pedido.objects.get(id=pedido_id)
