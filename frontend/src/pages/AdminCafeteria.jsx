@@ -146,13 +146,12 @@ function PestañaPedidos() {
   }
 
   const getSiguienteEstado = (estado) => {
-    switch (estado) {
-      case 'PAGADO': return { estado: 'PREPARANDO', label: 'Empezar' }
-      case 'PREPARANDO': return { estado: 'LISTO', label: 'Listo' }
-      case 'LISTO': return { estado: 'ENTREGADO', label: 'Entregado' }
-      default: return null
-    }
+  switch (estado) {
+    case 'PAGADO': return { estado: 'LISTO', label: '✅ Marcar como listo' }
+    case 'LISTO': return { estado: 'ENTREGADO', label: '📦 Marcar como entregado' }
+    default: return null
   }
+}
 
   // Agrupar por franja
   const pedidosPorFranja = pedidos.reduce((acc, pedido) => {

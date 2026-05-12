@@ -271,10 +271,20 @@ function Menu() {
       {/* SECCIONES */}
       <div style={{ flex: 1, paddingBottom: carrito.length > 0 ? '90px' : '16px' }}>
         {cargandoProductos ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 14 }}>
-            Cargando productos...
-          </div>
-        ) : (
+  <div style={{ textAlign: 'center', padding: 40, color: '#888', fontSize: 14 }}>
+    Cargando productos...
+  </div>
+) : productos.length === 0 ? (
+  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, paddingTop: 80 }}>
+    <div style={{ fontSize: 48 }}>🍽️</div>
+    <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--gris-texto)' }}>
+      Todavía no hay productos
+    </div>
+    <div style={{ fontSize: 13, color: '#888', textAlign: 'center', padding: '0 32px' }}>
+      El menú se actualizará en breve
+    </div>
+  </div>
+) : (
           categorias.map(cat => {
             const prods = productosPorCategoria[cat]
             if (!prods || prods.length === 0) return null

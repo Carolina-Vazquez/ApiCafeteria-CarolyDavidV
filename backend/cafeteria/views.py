@@ -43,9 +43,17 @@ class GoogleLoginView(APIView):
             last_name = idinfo.get('family_name', '')
 
             user, created = User.objects.get_or_create(
-                username=email,
-                defaults={'email': email, 'first_name': first_name, 'last_name': last_name}
+                email=email,
+                defaults={
+                    'username': email,
+                    'first_name': first_name,
+                    'last_name': last_name
+                }
             )
+            if not created:
+                user.first_name = first_name
+                user.last_name = last_name
+                user.save()
 
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -56,7 +64,6 @@ class GoogleLoginView(APIView):
 
         except ValueError:
             return Response({'error': 'Token de Google inválido'}, status=status.HTTP_401_UNAUTHORIZED)
-
 
 # ── PRODUCTOS ─────────────────────────────────────────
 
